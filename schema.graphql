@@ -1,0 +1,99 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Blog {
+  _id: String!
+  comments: Comment!
+  content: String!
+
+  """Blog Description"""
+  description: String!
+  owner: User
+
+  """Blog Title"""
+  title: String
+}
+
+type Comment {
+  content: String!
+  owner: String!
+}
+
+input CreateBlogInput {
+  """Blog content"""
+  content: String!
+
+  """Blog Description"""
+  description: String!
+
+  """Blog owner"""
+  owner: String!
+
+  """Blog Title"""
+  title: String!
+}
+
+input CreateUserInput {
+  address: String!
+  age: Int!
+  avatar: String
+  firstName: String!
+  lastName: String!
+  sex: String!
+}
+
+type Mutation {
+  addComment(blogId: String!, comment: String!, userId: String!): Blog!
+  createBlog(createBlogInput: CreateBlogInput!): Blog!
+  createUser(createUserInput: CreateUserInput!): User!
+  initBlogs: [Blog!]!
+  initUsers: [User!]!
+  removeBlog(id: String!): Blog!
+  removeUser(id: Int!): User!
+  updateBlog(updateBlogInput: UpdateBlogInput!): Blog!
+  updateUser(updateUserInput: UpdateUserInput!): User!
+}
+
+type Query {
+  blog(id: String!): Blog!
+  blogs(page: Int, perPage: Int): [Blog!]!
+  user(id: String!): User!
+  users(page: Int, perPage: Int): [User!]!
+}
+
+input UpdateBlogInput {
+  """Blog content"""
+  content: String
+
+  """Blog Description"""
+  description: String
+  id: String!
+
+  """Blog owner"""
+  owner: String
+
+  """Blog Title"""
+  title: String
+}
+
+input UpdateUserInput {
+  address: String
+  age: Int
+  avatar: String
+  firstName: String
+  id: String!
+  lastName: String
+  sex: String
+}
+
+type User {
+  _id: String!
+  address: String!
+  age: Int!
+  avatar: String!
+  blogs: [Blog!]!
+  firstName: String!
+  lastName: String!
+  sex: String!
+}
