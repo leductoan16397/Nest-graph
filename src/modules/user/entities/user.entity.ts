@@ -1,38 +1,42 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
-import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Blog } from 'src/modules/blog/entities/blog.entity';
+import { Column, Entity, ObjectID, ObjectIdColumn, OneToMany } from 'typeorm';
 
-export type UserDocument = HydratedDocument<User>;
-
-@Schema()
+@Entity()
 @ObjectType()
 export class User {
+  @ObjectIdColumn()
   @Field(() => String)
-  _id: MongooseSchema.Types.ObjectId;
+  _id: ObjectID;
 
-  @Prop()
-  @Field(() => String, {})
+  @Column()
+  @Field(() => String, { nullable: true })
   firstName: string;
 
-  @Prop()
-  @Field(() => String, {})
+  @Column()
+  @Field(() => String, { nullable: true })
   sex: string;
 
-  @Prop()
-  @Field(() => String, {})
+  @Column()
+  @Field(() => String, { nullable: true })
   lastName: string;
 
-  @Prop()
-  @Field(() => Int, {})
+  @Column()
+  @Field(() => Int, { nullable: true })
   age: number;
 
-  @Prop()
-  @Field(() => String, {})
+  @Column()
+  @Field(() => String, { nullable: true })
   address: string;
 
-  @Prop()
-  @Field(() => String, {})
+  @Column()
+  @Field(() => String, { nullable: true })
   avatar: string;
-}
 
-export const UserSchema = SchemaFactory.createForClass(User);
+  @OneToMany(() => Blog, (blog) => blog.owner)
+  blogs: Blog[];
+
+  constructor(user?: Partial<User>) {
+    Object.assign(this, user);
+  }
+}

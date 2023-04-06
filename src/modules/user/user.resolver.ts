@@ -13,6 +13,9 @@ import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { Blog } from '../blog/entities/blog.entity';
 import { BlogService } from '../blog/blog.service';
+// import { ObjectID } from 'typeorm';
+import { ObjectId } from 'mongodb';
+import { ObjectID } from 'typeorm';
 
 @Resolver(() => User)
 export class UserResolver {
@@ -46,7 +49,7 @@ export class UserResolver {
 
   @Query(() => User)
   user(@Args('id', { type: () => String }) id: string) {
-    return this.userService.findOne({ _id: id });
+    return this.userService.findOne({ where: { _id: new ObjectId(id) } });
   }
 
   @Mutation(() => User)
@@ -58,8 +61,10 @@ export class UserResolver {
   }
 
   @Mutation(() => User)
-  removeUser(@Args('id', { type: () => Int }) id: string) {
-    return this.userService.findByIdAndDelete(id);
+  removeUser(@Args('id', { type: () => String }) id: string) {
+    const objectId = ObjectId.createFromHexString(id);
+
+    return this.userService.findByIdAndDelete(objectId as unknown as ObjectID);
   }
 
   @Mutation(() => [User])

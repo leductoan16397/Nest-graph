@@ -12,6 +12,8 @@ import { BlogService } from './blog.service';
 import { CreateBlogInput } from './dto/create-blog.input';
 import { UpdateBlogInput } from './dto/update-blog.input';
 import { Blog } from './entities/blog.entity';
+import { ObjectID } from 'typeorm';
+import { ObjectId } from 'mongodb';
 
 @Resolver(() => Blog)
 export class BlogResolver {
@@ -45,7 +47,8 @@ export class BlogResolver {
 
   @Query(() => Blog)
   async blog(@Args('id', { type: () => String }) id: string) {
-    return this.blogService.findOne({ _id: id });
+    // return await this.blogService.findOne({ where: { _id: new ObjectId(id) } });
+    return await this.blogService.findOne(new ObjectId(id));
   }
 
   @Mutation(() => Blog, { name: 'updateBlog' })
@@ -58,7 +61,7 @@ export class BlogResolver {
 
   @Mutation(() => Blog, { name: 'removeBlog' })
   async removeBlog(@Args('id', { type: () => String }) id: string) {
-    return await this.blogService.findByIdAndDelete(id);
+    return await this.blogService.findByIdAndDelete(new ObjectID(id));
   }
 
   @Mutation(() => Blog)
@@ -78,6 +81,8 @@ export class BlogResolver {
   @ResolveField()
   async owner(@Parent() blog: Blog) {
     const { owner } = blog;
-    return await this.userService.findOne({ _id: owner });
+    return await this.userService.findOne({
+      where: { _id: owner },
+    });
   }
 }

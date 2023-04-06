@@ -4,11 +4,11 @@
 
 type Blog {
   _id: String!
-  comments: Comment!
-  content: String!
+  comments: Comment
+  content: String
 
   """Blog Description"""
-  description: String!
+  description: String
   owner: User
 
   """Blog Title"""
@@ -16,8 +16,7 @@ type Blog {
 }
 
 type Comment {
-  content: String!
-  owner: String!
+  content: String
 }
 
 input CreateBlogInput {
@@ -50,7 +49,7 @@ type Mutation {
   initBlogs: [Blog!]!
   initUsers: [User!]!
   removeBlog(id: String!): Blog!
-  removeUser(id: Int!): User!
+  removeUser(id: String!): User!
   updateBlog(updateBlogInput: UpdateBlogInput!): Blog!
   updateUser(updateUserInput: UpdateUserInput!): User!
 }
@@ -89,11 +88,11 @@ input UpdateUserInput {
 
 type User {
   _id: String!
-  address: String!
-  age: Int!
-  avatar: String!
+  address: String
+  age: Int
+  avatar: String
   blogs: [Blog!]!
-  firstName: String!
-  lastName: String!
-  sex: String!
+  firstName: String
+  lastName: String
+  sex: String
 }

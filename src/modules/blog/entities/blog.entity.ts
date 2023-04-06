@@ -1,34 +1,37 @@
 import { ObjectType, Field } from '@nestjs/graphql';
-import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { User } from 'src/modules/user/entities/user.entity';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  ObjectID,
+  ObjectIdColumn,
+} from 'typeorm';
 
-@Schema()
 @ObjectType()
 export class Comment {
-  @Prop()
-  @Field(() => String)
+  @Column()
+  @Field(() => String, { nullable: true })
   content: string;
 
-  @Prop({ type: [{ type: MongooseSchema.Types.ObjectId, ref: 'User' }] })
-  @Field(() => String)
-  owner: User;
+  // @Column()
+  // @Field(() => String)
+  // owner: User;
 }
-export const CommentSchema = SchemaFactory.createForClass(Comment);
 
-export type BlogDocument = HydratedDocument<Blog>;
-
-@Schema()
+@Entity()
 @ObjectType()
 export class Blog {
+  @ObjectIdColumn()
   @Field(() => String)
-  _id: MongooseSchema.Types.ObjectId;
+  _id: ObjectID;
 
-  @Prop()
-  @Field(() => String, {})
+  @Column()
+  @Field(() => String, { nullable: true })
   content: string;
 
-  @Prop()
+  @Column()
   @Field(() => String, {
     description: 'Blog Title',
     nullable: true,
@@ -36,17 +39,19 @@ export class Blog {
   })
   title: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
   @Field(() => User, { nullable: true })
-  owner: User | MongooseSchema.Types.ObjectId;
+  @ManyToOne(() => User, (user) => user.blogs)
+  owner: User | ObjectID;
 
-  @Prop()
-  @Field(() => String, { description: 'Blog Description' })
+  @Column()
+  @Field(() => String, { nullable: true, description: 'Blog Description' })
   description: string;
 
-  @Prop([CommentSchema])
-  @Field(() => Comment)
+  @Column(() => Comment)
+  @Field(() => Comment, { nullable: true })
   comments: Comment[];
-}
 
-export const BlogSchema = SchemaFactory.createForClass(Blog);
+  constructor(blog?: Partial<Blog>) {
+    Object.assign(this, blog);
+  }
+}

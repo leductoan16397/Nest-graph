@@ -1,23 +1,30 @@
-import { FilterQuery, Model, ProjectionType } from 'mongoose';
 import { Injectable } from '@nestjs/common';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { User } from './entities/user.entity';
-import { InjectModel } from '@nestjs/mongoose';
 import { readFileSync } from 'node:fs';
 import { csv2jsonAsync } from 'json-2-csv';
+import { InjectRepository } from '@nestjs/typeorm';
+import {
+  FindOptionsSelect,
+  FindOptionsWhere,
+  MongoRepository,
+  ObjectID,
+} from 'typeorm';
+import { MongoFindOneOptions } from 'typeorm/find-options/mongodb/MongoFindOneOptions';
+import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class UserService {
   constructor(
-    @InjectModel(User.name)
-    private readonly userModel: Model<User>,
+    @InjectRepository(User)
+    private readonly userRepository: MongoRepository<User>,
   ) {}
 
   async create(createUserInput: CreateUserInput) {
     try {
-      const user = new this.userModel(createUserInput);
-      return await user.save();
+      const user = new User(createUserInput);
+      return await this.userRepository.save(user);
     } catch (error) {
       return new Error(error.message);
     }
@@ -31,18 +38,20 @@ export class UserService {
   }: {
     page?: number;
     perPage?: number;
-    projection?: ProjectionType<User>;
-    filter?: FilterQuery<User>;
+    projection?: FindOptionsSelect<User>;
+    filter?: FindOptionsWhere<User>;
   }) {
     try {
       const users =
         (!!page &&
           !!perPage &&
-          (await this.userModel
-            .find(filter, projection)
-            .limit(perPage)
-            .skip(perPage * (page - 1)))) ||
-        (await this.userModel.find(filter, projection));
+          (await this.userRepository.find({
+            where: filter,
+            select: projection,
+            skip: perPage * (page - 1),
+            take: perPage,
+          }))) ||
+        (await this.userRepository.find({ where: filter, select: projection }));
       if (users.length === 0) {
         return 'user not found';
       }
@@ -52,9 +61,9 @@ export class UserService {
     }
   }
 
-  async findOne(filter: FilterQuery<User> = {}) {
+  async findOne(filter: MongoFindOneOptions<User> = {}) {
     try {
-      const user = await this.userModel.findOne(filter).exec();
+      const user = await this.userRepository.findOne(filter);
       if (!user) {
         return 'user not found';
       }
@@ -66,18 +75,24 @@ export class UserService {
 
   async findByIdAndUpdate(id: string, updateUserInput: UpdateUserInput) {
     try {
-      return await this.userModel.findByIdAndUpdate(id, updateUserInput, {
-        new: true,
-        upsert: true,
-      });
+      await this.userRepository.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { lastName: updateUserInput.lastName } },
+        {
+          upsert: true,
+        },
+      );
+
+      return await this.userRepository.findOneBy(id);
     } catch (error) {
       return new Error(error.message);
     }
   }
 
-  async findByIdAndDelete(id: string) {
+  async findByIdAndDelete(id: ObjectID) {
     try {
-      return await this.userModel.findByIdAndDelete(id);
+      const a = await this.userRepository.findOneAndDelete({ _id: id });
+      return a.value;
     } catch (error) {
       return new Error(error.message);
     }
@@ -88,7 +103,7 @@ export class UserService {
       const users = await csv2jsonAsync(
         readFileSync('./dataa/user.csv').toString(),
       );
-      return await this.userModel.insertMany(users);
+      return await this.userRepository.insertMany(users);
     } catch (error) {
       return new Error(error.message);
     }

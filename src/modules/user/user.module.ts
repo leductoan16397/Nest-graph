@@ -1,17 +1,13 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserResolver } from './user.resolver';
-import { User, UserSchema } from './entities/user.entity';
-import { MongooseModule } from '@nestjs/mongoose';
+import { User } from './entities/user.entity';
 import { BlogModule } from '../blog/blog.module';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
 @Module({
-  imports: [
-    forwardRef(() => BlogModule),
-    // BlogModule,
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-  ],
+  imports: [forwardRef(() => BlogModule), TypeOrmModule.forFeature([User])],
   providers: [UserResolver, UserService],
-  exports: [UserService, MongooseModule],
+  exports: [UserService, TypeOrmModule],
 })
 export class UserModule {}
