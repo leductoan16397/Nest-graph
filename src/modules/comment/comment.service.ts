@@ -1,75 +1,55 @@
 import { Injectable } from '@nestjs/common';
 import { CreateCommentInput } from './dto/create-comment.input';
 import { UpdateCommentInput } from './dto/update-comment.input';
-import { Comment } from './entities/comment.entity';
-import { InjectRepository } from '@nestjs/typeorm';
-import {
-  FindOneOptions,
-  FindOptionsSelect,
-  FindOptionsWhere,
-  Repository,
-} from 'typeorm';
-import { Blog } from '../blog/entities/blog.entity';
-import { User } from '../user/entities/user.entity';
-
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../common/prisma.service';
 @Injectable()
 export class CommentService {
-  constructor(
-    @InjectRepository(Comment)
-    private readonly commentRepository: Repository<Comment>,
-    @InjectRepository(Blog)
-    private readonly blogRepository: Repository<Blog>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async create(createCommentInput: CreateCommentInput) {
     try {
-      const owner = await this.userRepository.findOneBy({
-        id: createCommentInput.ownerId,
+      const owner = await this.prismaService.user.findUnique({
+        where: {
+          id: createCommentInput.ownerId,
+        },
       });
-      const blog = await this.blogRepository.findOneBy({
-        id: createCommentInput.blogId,
+      const blog = await this.prismaService.blog.findUnique({
+        where: { id: createCommentInput.blogId },
       });
 
-      const comment = new Comment({
-        content: createCommentInput.content,
-        blog,
-        owner,
+      return await this.prismaService.comment.create({
+        data: {
+          content: createCommentInput.content,
+          ownerId: owner.id,
+          blogId: blog.id,
+        },
       });
-      return await this.commentRepository.save(comment);
     } catch (error) {
       return new Error(error.message);
     }
   }
 
   async find({
-    page,
-    perPage,
+    page = 1,
+    perPage = 10,
     projection,
     filter = {},
   }: {
     page?: number;
     perPage?: number;
-    projection?: FindOptionsSelect<Comment>;
-    filter?: FindOptionsWhere<Comment>;
+    projection?: Prisma.CommentSelect;
+    filter?: Prisma.CommentWhereInput;
   }) {
     try {
-      const comments =
-        (!!page &&
-          !!perPage &&
-          (await this.commentRepository.find({
-            where: filter,
-            select: projection,
-            skip: perPage * (page - 1),
-            take: perPage,
-          }))) ||
-        (await this.commentRepository.find({
-          where: filter,
-          select: projection,
-        }));
+      const comments = await this.prismaService.comment.findMany({
+        where: filter,
+        select: projection,
+        skip: perPage * (page - 1),
+        take: perPage,
+      });
       if (comments.length === 0) {
-        return 'commentRepository not found';
+        console.log('prismaService.comment not found');
       }
       return comments;
     } catch (error) {
@@ -77,9 +57,11 @@ export class CommentService {
     }
   }
 
-  async findOne(filter: FindOneOptions<Comment> = {}) {
+  async findOne(filter: Prisma.CommentWhereInput = {}) {
     try {
-      const comment = await this.commentRepository.findOne(filter);
+      const comment = await this.prismaService.comment.findFirst({
+        where: filter,
+      });
       if (!comment) {
         return 'comment not found';
       }
@@ -94,11 +76,14 @@ export class CommentService {
     updateCommentInput: Pick<UpdateCommentInput, 'content'>,
   ) {
     try {
-      await this.commentRepository.update(id, {
-        content: updateCommentInput.content,
+      await this.prismaService.comment.update({
+        where: { id },
+        data: {
+          content: updateCommentInput.content,
+        },
       });
 
-      return await this.commentRepository.findOneBy({ id });
+      return await this.prismaService.comment.findUnique({ where: { id } });
     } catch (error) {
       return new Error(error.message);
     }
@@ -106,7 +91,7 @@ export class CommentService {
 
   async findByIdAndDelete(id: number) {
     try {
-      const a = await this.userRepository.delete(id);
+      const a = await this.prismaService.user.delete({ where: { id } });
       return a;
     } catch (error) {
       return new Error(error.message);
@@ -123,16 +108,11 @@ export class CommentService {
     perPage?: number;
   }) {
     try {
-      const comments = await this.commentRepository
-        .createQueryBuilder('comment')
-        .where('comment.blogId = :blogId', { blogId })
-        .leftJoinAndSelect('comment.owner', 'owner')
-        .take(perPage)
-        .skip(perPage * (page - 1))
-        .getMany();
-      // if (comments.length === 0) {
-      //   return 'commentRepository not found';
-      // }
+      const comments = await this.prismaService.comment.findMany({
+        where: { blogId },
+        take: perPage,
+        skip: perPage * (page - 1),
+      });
       return comments;
     } catch (error) {
       return new Error(error.message);

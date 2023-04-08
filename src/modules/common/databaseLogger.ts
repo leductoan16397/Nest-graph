@@ -1,7 +1,6 @@
-import { Logger as TypeOrmLogger } from 'typeorm';
 import { Logger as NestLogger } from '@nestjs/common';
 
-class DatabaseLogger implements TypeOrmLogger {
+class DatabaseLogger {
   private readonly logger = new NestLogger('SQL');
 
   logQuery(query: string, parameters?: unknown[]) {

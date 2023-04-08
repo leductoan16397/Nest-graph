@@ -7,7 +7,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { CommonModule } from './modules/common/common.module';
 import * as depthLimit from 'graphql-depth-limit';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './modules/user/user.module';
 import { BlogModule } from './modules/blog/blog.module';
 import { CommentModule } from './modules/comment/comment.module';
@@ -16,18 +15,18 @@ import DatabaseLogger from './modules/common/databaseLogger';
 @Module({
   imports: [
     CommonModule,
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'postgres',
-      database: 'blog',
-      synchronize: true,
-      autoLoadEntities: true,
-      logging: true,
-      logger: new DatabaseLogger(),
-    }),
+    // TypeOrmModule.forRoot({
+    //   type: 'postgres',
+    //   host: 'localhost',
+    //   port: 5432,
+    //   username: 'postgres',
+    //   password: 'postgres',
+    //   database: 'blog',
+    //   synchronize: true,
+    //   autoLoadEntities: true,
+    //   logging: true,
+    //   logger: new DatabaseLogger(),
+    // }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       debug: true,

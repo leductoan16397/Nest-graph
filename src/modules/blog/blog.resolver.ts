@@ -13,6 +13,7 @@ import { CreateBlogInput } from './dto/create-blog.input';
 import { UpdateBlogInput } from './dto/update-blog.input';
 import { Blog } from './entities/blog.entity';
 import { CommentService } from '../comment/comment.service';
+import { Blog as PrismaBlog } from '@prisma/client';
 
 @Resolver(() => Blog)
 export class BlogResolver {
@@ -69,10 +70,10 @@ export class BlogResolver {
   }
 
   @ResolveField()
-  async owner(@Parent() blog: Blog) {
+  async owner(@Parent() blog: PrismaBlog) {
     const { ownerId } = blog;
     return await this.userService.findOne({
-      where: { id: ownerId },
+      id: ownerId,
     });
   }
 

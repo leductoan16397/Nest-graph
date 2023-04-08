@@ -12,5 +12,5 @@ export class CreateBlogInput {
   content: string;
 
   @Field(() => Int, { description: 'Blog owner', nullable: false })
-  owner: number;
+  ownerId: number;
 }

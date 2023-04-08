@@ -1,6 +1,5 @@
 import {
   Resolver,
-  Query,
   Mutation,
   Args,
   Int,
@@ -8,10 +7,11 @@ import {
   ResolveField,
 } from '@nestjs/graphql';
 import { CommentService } from './comment.service';
-import { Comment } from './entities/comment.entity';
 import { CreateCommentInput } from './dto/create-comment.input';
 import { UpdateCommentInput } from './dto/update-comment.input';
 import { UserService } from '../user/user.service';
+import { Comment as PrismaComment } from '@prisma/client';
+import { Comment } from './entities/comment.entity';
 
 @Resolver(() => Comment)
 export class CommentResolver {
@@ -28,10 +28,10 @@ export class CommentResolver {
   }
 
   @ResolveField()
-  async owner(@Parent() comment: Comment) {
+  async owner(@Parent() comment: PrismaComment) {
     const { ownerId } = comment;
     return await this.userService.findOne({
-      where: { id: ownerId },
+      id: ownerId,
     });
   }
 

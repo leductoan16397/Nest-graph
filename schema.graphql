@@ -33,7 +33,7 @@ input CreateBlogInput {
   description: String!
 
   """Blog owner"""
-  owner: Int!
+  ownerId: Int!
 
   """Blog Title"""
   title: String!
@@ -94,7 +94,7 @@ input UpdateBlogInput {
   id: Int!
 
   """Blog owner"""
-  owner: Int
+  ownerId: Int
 
   """Blog Title"""
   title: String

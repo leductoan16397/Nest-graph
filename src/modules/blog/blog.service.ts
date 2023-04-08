@@ -1,72 +1,59 @@
 import { faker } from '@faker-js/faker';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { readFileSync } from 'fs';
 import { csv2jsonAsync } from 'json-2-csv';
-import { User } from '../user/entities/user.entity';
 import { CreateBlogInput } from './dto/create-blog.input';
 import { UpdateBlogInput } from './dto/update-blog.input';
-import { Blog } from './entities/blog.entity';
-import { FindOptionsSelect, FindOptionsWhere, Repository } from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+import { PrismaService } from '../common/prisma.service';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class BlogService {
   constructor(
-    @InjectRepository(Blog)
-    private readonly blogRepository: Repository<Blog>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
   ) {}
 
   async create(createBlogInput: CreateBlogInput) {
     try {
-      const owner = await this.userRepository.findOne({
-        where: { id: createBlogInput.owner },
+      const owner = await this.prismaService.user.findUnique({
+        where: { id: createBlogInput.ownerId },
       });
       if (!owner) {
         return new Error('User is not exist!!!');
       }
-      const blog = new Blog({
-        content: createBlogInput.content,
-        description: createBlogInput.description,
-        title: createBlogInput.title,
-        owner,
+      return await this.prismaService.blog.create({
+        data: {
+          content: createBlogInput.content,
+          description: createBlogInput.description,
+          title: createBlogInput.title,
+          ownerId: owner.id,
+        },
       });
-      return await this.blogRepository.save(blog);
     } catch (error) {
       return new Error(error.message);
     }
   }
 
   async find({
-    page,
-    perPage,
+    page = 1,
+    perPage = 10,
     projection,
     filter = {},
   }: {
     page?: number;
     perPage?: number;
-    projection?: FindOptionsSelect<Blog>;
-    filter?: FindOptionsWhere<Blog>;
+    projection?: Prisma.BlogSelect;
+    filter?: Prisma.BlogWhereInput;
   }) {
     try {
-      const blogs =
-        (!!page &&
-          !!perPage &&
-          (await this.blogRepository.find({
-            where: filter,
-            select: projection,
-            skip: perPage * (page - 1),
-            take: perPage,
-          }))) ||
-        (await this.blogRepository.find({ where: filter, select: projection }));
-
-      // const blogs = await this.blogRepository
-      //   .createQueryBuilder('blog')
-      //   .leftJoinAndSelect('blog.owner', 'owner')
-      //   .getMany();
+      const blogs = await this.prismaService.blog.findMany({
+        where: filter,
+        select: projection,
+        skip: perPage * (page - 1),
+        take: perPage,
+      });
       if (blogs.length === 0) {
-        return 'Blog not found a';
+        console.log('Blog not found a');
       }
       return blogs;
     } catch (error) {
@@ -76,7 +63,7 @@ export class BlogService {
 
   async findOne(id: number) {
     try {
-      const blog = await this.blogRepository.findOneBy({ id });
+      const blog = await this.prismaService.blog.findUnique({ where: { id } });
       if (!blog) {
         return 'Blog not found';
       }
@@ -88,7 +75,10 @@ export class BlogService {
 
   async findByIdAndUpdate(id: number, updateBlogInput: UpdateBlogInput) {
     try {
-      return await this.blogRepository.update(id, updateBlogInput as any);
+      return await this.prismaService.blog.update({
+        where: { id },
+        data: updateBlogInput,
+      });
     } catch (error) {
       return new Error(error.message);
     }
@@ -96,7 +86,7 @@ export class BlogService {
 
   async findByIdAndDelete(id: number) {
     try {
-      return await this.blogRepository.delete(id);
+      return await this.prismaService.blog.delete({ where: { id } });
     } catch (error) {
       return new Error(error.message);
     }
@@ -108,22 +98,22 @@ export class BlogService {
         readFileSync('./dataa/blog.csv').toString(),
         { delimiter: { field: '|' } },
       );
-      const users = await this.userRepository.find();
-      const blogs: Blog[] = [];
+      const users = await this.prismaService.user.findMany();
+      const blogs: Prisma.BlogCreateManyInput[] = [];
       blogsdata.forEach((blogdata) => {
         const user =
           users[faker.datatype.number({ min: 0, max: users.length - 1 })];
 
-        const blog = new Blog({
+        const blog: Prisma.BlogCreateManyInput = {
           content: blogdata.content,
           description: blogdata.description,
           title: blogdata.title,
-          owner: user,
-        });
+          ownerId: user.id,
+        };
         blogs.push(blog);
       });
 
-      return await this.blogRepository.insert(blogs);
+      return await this.prismaService.blog.createMany({ data: blogs });
     } catch (error) {
       return new Error(error.message);
     }
@@ -131,10 +121,9 @@ export class BlogService {
 
   async blogsByUserId(userId: number) {
     try {
-      const blogs = await this.blogRepository
-        .createQueryBuilder('blog')
-        .where('blog.ownerId = :id', { id: userId })
-        .getMany();
+      const blogs = await this.prismaService.blog.findMany({
+        where: { ownerId: userId },
+      });
       return blogs;
     } catch (error) {
       return new Error(error.message);
