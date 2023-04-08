@@ -6,38 +6,32 @@ import { User } from '../user/entities/user.entity';
 import { CreateBlogInput } from './dto/create-blog.input';
 import { UpdateBlogInput } from './dto/update-blog.input';
 import { Blog } from './entities/blog.entity';
-import {
-  FindOptionsSelect,
-  FindOptionsWhere,
-  MongoRepository,
-  ObjectID,
-} from 'typeorm';
-import { MongoFindOneOptions } from 'typeorm/find-options/mongodb/MongoFindOneOptions';
+import { FindOptionsSelect, FindOptionsWhere, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class BlogService {
   constructor(
     @InjectRepository(Blog)
-    private readonly blogRepository: MongoRepository<Blog>,
+    private readonly blogRepository: Repository<Blog>,
     @InjectRepository(User)
-    private readonly userRepository: MongoRepository<User>,
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(createBlogInput: CreateBlogInput) {
     try {
       const owner = await this.userRepository.findOne({
-        where: { _id: new ObjectId(createBlogInput.owner) },
+        where: { id: createBlogInput.owner },
       });
       if (!owner) {
         return new Error('User is not exist!!!');
       }
-      // createBlogInput.owner = new ObjectId(createBlogInput.owner);
       const blog = new Blog({
-        ...createBlogInput,
-        owner: new ObjectId(createBlogInput.owner),
-      } as any);
+        content: createBlogInput.content,
+        description: createBlogInput.description,
+        title: createBlogInput.title,
+        owner,
+      });
       return await this.blogRepository.save(blog);
     } catch (error) {
       return new Error(error.message);
@@ -66,6 +60,11 @@ export class BlogService {
             take: perPage,
           }))) ||
         (await this.blogRepository.find({ where: filter, select: projection }));
+
+      // const blogs = await this.blogRepository
+      //   .createQueryBuilder('blog')
+      //   .leftJoinAndSelect('blog.owner', 'owner')
+      //   .getMany();
       if (blogs.length === 0) {
         return 'Blog not found a';
       }
@@ -75,41 +74,27 @@ export class BlogService {
     }
   }
 
-  async findOne(id: any) {
+  async findOne(id: number) {
     try {
-      const blog = await this.blogRepository
-        .aggregate([
-          { $match: { _id: id } },
-          {
-            $lookup: {
-              from: 'user',
-              localField: 'owner',
-              foreignField: '_id',
-              as: 'owner',
-            },
-          },
-        ])
-        .next();
+      const blog = await this.blogRepository.findOneBy({ id });
       if (!blog) {
         return 'Blog not found';
       }
       return blog;
     } catch (error) {
-      return new Error(error.message);
+      throw new Error(error.message);
     }
   }
 
-  async findByIdAndUpdate(id: string, updateBlogInput: UpdateBlogInput) {
+  async findByIdAndUpdate(id: number, updateBlogInput: UpdateBlogInput) {
     try {
-      return await this.blogRepository.updateOne({ _id: id }, updateBlogInput, {
-        upsert: true,
-      });
+      return await this.blogRepository.update(id, updateBlogInput as any);
     } catch (error) {
       return new Error(error.message);
     }
   }
 
-  async findByIdAndDelete(id: ObjectID) {
+  async findByIdAndDelete(id: number) {
     try {
       return await this.blogRepository.delete(id);
     } catch (error) {
@@ -117,53 +102,40 @@ export class BlogService {
     }
   }
 
-  async addComment({
-    blogId,
-    comment,
-    userId,
-  }: {
-    blogId: string;
-    userId: string;
-    comment: string;
-  }) {
+  async initBlogs() {
     try {
-      const user = await this.userRepository.findOne({
-        where: { _id: new ObjectID(userId) },
+      const blogsdata = await csv2jsonAsync(
+        readFileSync('./dataa/blog.csv').toString(),
+        { delimiter: { field: '|' } },
+      );
+      const users = await this.userRepository.find();
+      const blogs: Blog[] = [];
+      blogsdata.forEach((blogdata) => {
+        const user =
+          users[faker.datatype.number({ min: 0, max: users.length - 1 })];
+
+        const blog = new Blog({
+          content: blogdata.content,
+          description: blogdata.description,
+          title: blogdata.title,
+          owner: user,
+        });
+        blogs.push(blog);
       });
-      if (!user) {
-        return new Error('User is not exist!!!');
-      }
-      return;
-      // return await this.blogRepository.findByIdAndUpdate(
-      //   blogId,
-      //   {
-      //     $push: {
-      //       comments: { comment, userId },
-      //     },
-      //   },
-      //   { new: true },
-      // );
+
+      return await this.blogRepository.insert(blogs);
     } catch (error) {
       return new Error(error.message);
     }
   }
 
-  async initBlogs() {
+  async blogsByUserId(userId: number) {
     try {
-      const blogs: Blog[] = await csv2jsonAsync(
-        readFileSync('./dataa/blog.csv').toString(),
-        { delimiter: { field: '|' } },
-      );
-      const users = await this.userRepository.find();
-
-      blogs.forEach((blog) => {
-        const user =
-          users[faker.datatype.number({ min: 0, max: users.length - 1 })];
-
-        blog.owner = user._id;
-      });
-
-      return await this.blogRepository.insertMany(blogs);
+      const blogs = await this.blogRepository
+        .createQueryBuilder('blog')
+        .where('blog.ownerId = :id', { id: userId })
+        .getMany();
+      return blogs;
     } catch (error) {
       return new Error(error.message);
     }

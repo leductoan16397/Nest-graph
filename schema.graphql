@@ -3,20 +3,26 @@
 # ------------------------------------------------------
 
 type Blog {
-  _id: String!
-  comments: Comment
-  content: String
+  comments: [Comment!]
+  content: String!
+  createdAt: DateTime!
 
   """Blog Description"""
-  description: String
-  owner: User
+  description: String!
+  id: Int!
+  owner: User!
 
   """Blog Title"""
   title: String
+  updatedAt: DateTime!
 }
 
 type Comment {
-  content: String
+  content: String!
+  createdAt: DateTime!
+  id: Int!
+  owner: User!
+  updatedAt: DateTime!
 }
 
 input CreateBlogInput {
@@ -27,10 +33,21 @@ input CreateBlogInput {
   description: String!
 
   """Blog owner"""
-  owner: String!
+  owner: Int!
 
   """Blog Title"""
   title: String!
+}
+
+input CreateCommentInput {
+  """Example field (placeholder)"""
+  blogId: Int!
+
+  """Example field (placeholder)"""
+  content: String!
+
+  """Example field (placeholder)"""
+  ownerId: Int!
 }
 
 input CreateUserInput {
@@ -42,22 +59,29 @@ input CreateUserInput {
   sex: String!
 }
 
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
 type Mutation {
-  addComment(blogId: String!, comment: String!, userId: String!): Blog!
   createBlog(createBlogInput: CreateBlogInput!): Blog!
+  createComment(createCommentInput: CreateCommentInput!): Comment!
   createUser(createUserInput: CreateUserInput!): User!
   initBlogs: [Blog!]!
   initUsers: [User!]!
-  removeBlog(id: String!): Blog!
-  removeUser(id: String!): User!
+  removeBlog(id: Int!): Blog!
+  removeComment(id: Int!): Comment!
+  removeUser(id: Int!): User!
   updateBlog(updateBlogInput: UpdateBlogInput!): Blog!
+  updateComment(updateCommentInput: UpdateCommentInput!): Comment!
   updateUser(updateUserInput: UpdateUserInput!): User!
 }
 
 type Query {
-  blog(id: String!): Blog!
+  blog(id: Int!): Blog!
   blogs(page: Int, perPage: Int): [Blog!]!
-  user(id: String!): User!
+  user(id: Int!): User!
   users(page: Int, perPage: Int): [User!]!
 }
 
@@ -67,13 +91,18 @@ input UpdateBlogInput {
 
   """Blog Description"""
   description: String
-  id: String!
+  id: Int!
 
   """Blog owner"""
-  owner: String
+  owner: Int
 
   """Blog Title"""
   title: String
+}
+
+input UpdateCommentInput {
+  content: String!
+  id: Int!
 }
 
 input UpdateUserInput {
@@ -81,18 +110,20 @@ input UpdateUserInput {
   age: Int
   avatar: String
   firstName: String
-  id: String!
+  id: Int!
   lastName: String
   sex: String
 }
 
 type User {
-  _id: String!
   address: String
   age: Int
   avatar: String
   blogs: [Blog!]!
+  createdAt: DateTime!
   firstName: String
+  id: Int!
   lastName: String
   sex: String
+  updatedAt: DateTime!
 }

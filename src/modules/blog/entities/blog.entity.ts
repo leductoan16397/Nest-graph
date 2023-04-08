@@ -1,57 +1,41 @@
 import { ObjectType, Field } from '@nestjs/graphql';
+import { Comment } from 'src/modules/comment/entities/comment.entity';
+import { BaseEntity } from 'src/modules/common/base.entity';
 import { User } from 'src/modules/user/entities/user.entity';
-import {
-  Column,
-  Entity,
-  JoinColumn,
-  ManyToOne,
-  ObjectID,
-  ObjectIdColumn,
-} from 'typeorm';
-
-@ObjectType()
-export class Comment {
-  @Column()
-  @Field(() => String, { nullable: true })
-  content: string;
-
-  // @Column()
-  // @Field(() => String)
-  // owner: User;
-}
+import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 
 @Entity()
 @ObjectType()
-export class Blog {
-  @ObjectIdColumn()
-  @Field(() => String)
-  _id: ObjectID;
-
+export class Blog extends BaseEntity {
   @Column()
-  @Field(() => String, { nullable: true })
+  @Field(() => String, {})
   content: string;
 
-  @Column()
   @Field(() => String, {
     description: 'Blog Title',
     nullable: true,
     defaultValue: '',
   })
+  @Column()
   title: string;
 
-  @Field(() => User, { nullable: true })
-  @ManyToOne(() => User, (user) => user.blogs)
-  owner: User | ObjectID;
-
+  @Field(() => String, { description: 'Blog Description' })
   @Column()
-  @Field(() => String, { nullable: true, description: 'Blog Description' })
   description: string;
 
-  @Column(() => Comment)
-  @Field(() => Comment, { nullable: true })
+  @Column({ nullable: true })
+  ownerId: number;
+
+  @Field(() => User, {})
+  @ManyToOne(() => User, (user) => user.blogs, {})
+  owner: User;
+
+  @Field(() => [Comment], { nullable: true, defaultValue: [] })
+  @OneToMany(() => Comment, (comment) => comment.blog, {})
   comments: Comment[];
 
-  constructor(blog?: Partial<Blog>) {
+  constructor(blog: Pick<Blog, 'content' | 'description' | 'title' | 'owner'>) {
+    super();
     Object.assign(this, blog);
   }
 }

@@ -6,24 +6,29 @@ import { readFileSync } from 'node:fs';
 import { csv2jsonAsync } from 'json-2-csv';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+  FindOneOptions,
   FindOptionsSelect,
   FindOptionsWhere,
-  MongoRepository,
-  ObjectID,
+  Repository,
 } from 'typeorm';
-import { MongoFindOneOptions } from 'typeorm/find-options/mongodb/MongoFindOneOptions';
-import { ObjectId } from 'mongodb';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
-    private readonly userRepository: MongoRepository<User>,
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(createUserInput: CreateUserInput) {
     try {
-      const user = new User(createUserInput);
+      const user = new User({
+        address: createUserInput.address,
+        age: createUserInput.age,
+        avatar: createUserInput.avatar,
+        firstName: createUserInput.firstName,
+        lastName: createUserInput.lastName,
+        sex: createUserInput.sex,
+      });
       return await this.userRepository.save(user);
     } catch (error) {
       return new Error(error.message);
@@ -61,7 +66,7 @@ export class UserService {
     }
   }
 
-  async findOne(filter: MongoFindOneOptions<User> = {}) {
+  async findOne(filter: FindOneOptions<User> = {}) {
     try {
       const user = await this.userRepository.findOne(filter);
       if (!user) {
@@ -73,26 +78,20 @@ export class UserService {
     }
   }
 
-  async findByIdAndUpdate(id: string, updateUserInput: UpdateUserInput) {
+  async findByIdAndUpdate(id: number, updateUserInput: UpdateUserInput) {
     try {
-      await this.userRepository.updateOne(
-        { _id: new ObjectId(id) },
-        { $set: { lastName: updateUserInput.lastName } },
-        {
-          upsert: true,
-        },
-      );
+      await this.userRepository.update(id, updateUserInput);
 
-      return await this.userRepository.findOneBy(id);
+      return await this.userRepository.findOneBy({ id });
     } catch (error) {
       return new Error(error.message);
     }
   }
 
-  async findByIdAndDelete(id: ObjectID) {
+  async findByIdAndDelete(id: number) {
     try {
-      const a = await this.userRepository.findOneAndDelete({ _id: id });
-      return a.value;
+      const a = await this.userRepository.delete(id);
+      return a;
     } catch (error) {
       return new Error(error.message);
     }
@@ -103,7 +102,7 @@ export class UserService {
       const users = await csv2jsonAsync(
         readFileSync('./dataa/user.csv').toString(),
       );
-      return await this.userRepository.insertMany(users);
+      return await this.userRepository.insert(users);
     } catch (error) {
       return new Error(error.message);
     }

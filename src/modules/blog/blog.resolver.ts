@@ -12,14 +12,14 @@ import { BlogService } from './blog.service';
 import { CreateBlogInput } from './dto/create-blog.input';
 import { UpdateBlogInput } from './dto/update-blog.input';
 import { Blog } from './entities/blog.entity';
-import { ObjectID } from 'typeorm';
-import { ObjectId } from 'mongodb';
+import { CommentService } from '../comment/comment.service';
 
 @Resolver(() => Blog)
 export class BlogResolver {
   constructor(
     private readonly blogService: BlogService,
     private readonly userService: UserService,
+    private readonly commentService: CommentService,
   ) {}
 
   @Mutation(() => Blog)
@@ -46,9 +46,8 @@ export class BlogResolver {
   }
 
   @Query(() => Blog)
-  async blog(@Args('id', { type: () => String }) id: string) {
-    // return await this.blogService.findOne({ where: { _id: new ObjectId(id) } });
-    return await this.blogService.findOne(new ObjectId(id));
+  async blog(@Args('id', { type: () => Int }) id: number) {
+    return await this.blogService.findOne(id);
   }
 
   @Mutation(() => Blog, { name: 'updateBlog' })
@@ -60,17 +59,8 @@ export class BlogResolver {
   }
 
   @Mutation(() => Blog, { name: 'removeBlog' })
-  async removeBlog(@Args('id', { type: () => String }) id: string) {
-    return await this.blogService.findByIdAndDelete(new ObjectID(id));
-  }
-
-  @Mutation(() => Blog)
-  async addComment(
-    @Args('blogId', { type: () => String }) blogId: string,
-    @Args('userId', { type: () => String }) userId: string,
-    @Args('comment', { type: () => String }) comment: string,
-  ) {
-    return await this.blogService.addComment({ blogId, comment, userId });
+  async removeBlog(@Args('id', { type: () => Int }) id: number) {
+    return await this.blogService.findByIdAndDelete(id);
   }
 
   @Mutation(() => [Blog])
@@ -80,9 +70,15 @@ export class BlogResolver {
 
   @ResolveField()
   async owner(@Parent() blog: Blog) {
-    const { owner } = blog;
+    const { ownerId } = blog;
     return await this.userService.findOne({
-      where: { _id: owner },
+      where: { id: ownerId },
     });
+  }
+
+  @ResolveField()
+  async comments(@Parent() blog: Blog) {
+    const { id: blogId } = blog;
+    return await this.commentService.commentsByBlogId({ blogId });
   }
 }

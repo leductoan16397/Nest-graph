@@ -13,9 +13,6 @@ import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { Blog } from '../blog/entities/blog.entity';
 import { BlogService } from '../blog/blog.service';
-// import { ObjectID } from 'typeorm';
-import { ObjectId } from 'mongodb';
-import { ObjectID } from 'typeorm';
 
 @Resolver(() => User)
 export class UserResolver {
@@ -48,8 +45,8 @@ export class UserResolver {
   }
 
   @Query(() => User)
-  user(@Args('id', { type: () => String }) id: string) {
-    return this.userService.findOne({ where: { _id: new ObjectId(id) } });
+  user(@Args('id', { type: () => Int }) id: number) {
+    return this.userService.findOne({ where: { id } });
   }
 
   @Mutation(() => User)
@@ -61,10 +58,8 @@ export class UserResolver {
   }
 
   @Mutation(() => User)
-  removeUser(@Args('id', { type: () => String }) id: string) {
-    const objectId = ObjectId.createFromHexString(id);
-
-    return this.userService.findByIdAndDelete(objectId as unknown as ObjectID);
+  removeUser(@Args('id', { type: () => Int }) id: number) {
+    return this.userService.findByIdAndDelete(id);
   }
 
   @Mutation(() => [User])
@@ -74,7 +69,7 @@ export class UserResolver {
 
   @ResolveField(() => [Blog], {})
   async blogs(@Parent() user: User) {
-    const { _id: userId } = user;
-    return await this.blogService.find({ filter: { owner: userId } });
+    const { id: userId } = user;
+    return await this.blogService.blogsByUserId(userId);
   }
 }

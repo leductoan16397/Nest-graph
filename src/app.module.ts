@@ -10,16 +10,19 @@ import * as depthLimit from 'graphql-depth-limit';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './modules/user/user.module';
 import { BlogModule } from './modules/blog/blog.module';
+import { CommentModule } from './modules/comment/comment.module';
 import DatabaseLogger from './modules/common/databaseLogger';
 
 @Module({
   imports: [
     CommonModule,
     TypeOrmModule.forRoot({
-      type: 'mongodb',
+      type: 'postgres',
       host: 'localhost',
-      // port: 27017,
-      database: 'BlogType',
+      port: 5432,
+      username: 'postgres',
+      password: 'postgres',
+      database: 'blog',
       synchronize: true,
       autoLoadEntities: true,
       logging: true,
@@ -32,10 +35,11 @@ import DatabaseLogger from './modules/common/databaseLogger';
       autoSchemaFile: join(process.cwd(), 'schema.graphql'),
       sortSchema: true,
       logger: console,
-      validationRules: [depthLimit(2)],
+      validationRules: [depthLimit(5)],
     }),
     BlogModule,
     UserModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

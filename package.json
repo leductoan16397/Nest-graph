@@ -34,7 +34,7 @@
     "graphql": "^16.6.0",
     "graphql-depth-limit": "^1.1.0",
     "json-2-csv": "^3.20.0",
-    "mongodb": "^4.15.0",
+    "pg": "^8.10.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "7.5.5",
     "typeorm": "0.3.12"

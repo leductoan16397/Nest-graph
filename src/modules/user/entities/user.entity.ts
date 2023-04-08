@@ -1,14 +1,11 @@
 import { ObjectType, Field, Int } from '@nestjs/graphql';
 import { Blog } from 'src/modules/blog/entities/blog.entity';
-import { Column, Entity, ObjectID, ObjectIdColumn, OneToMany } from 'typeorm';
+import { BaseEntity } from 'src/modules/common/base.entity';
+import { Column, Entity, OneToMany } from 'typeorm';
 
 @Entity()
 @ObjectType()
-export class User {
-  @ObjectIdColumn()
-  @Field(() => String)
-  _id: ObjectID;
-
+export class User extends BaseEntity {
   @Column()
   @Field(() => String, { nullable: true })
   firstName: string;
@@ -33,10 +30,11 @@ export class User {
   @Field(() => String, { nullable: true })
   avatar: string;
 
-  @OneToMany(() => Blog, (blog) => blog.owner)
-  blogs: Blog[];
+  @OneToMany(() => Blog, (blog) => blog.owner, {})
+  blogs?: Blog[];
 
-  constructor(user?: Partial<User>) {
+  constructor(user: Omit<User, 'id' | 'blogs' | 'createdAt' | 'updatedAt'>) {
+    super();
     Object.assign(this, user);
   }
 }
